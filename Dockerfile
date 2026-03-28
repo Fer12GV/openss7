@@ -69,8 +69,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /opt/openss7
 
-# El script de build se ejecuta como entrypoint
+# El entrypoint usa el script desde el volumen montado (/opt/openss7/scripts/docker-build.sh)
+# para que los cambios al script no requieran reconstruir la imagen Docker.
+# COPY es solo fallback de referencia para builds standalone sin volumen.
 COPY scripts/docker-build.sh /usr/local/bin/docker-build.sh
 RUN chmod +x /usr/local/bin/docker-build.sh
 
-ENTRYPOINT ["/usr/local/bin/docker-build.sh"]
+# Usar siempre la version del script desde la fuente montada.
+# Se invoca con bash explicitamente para no depender del bit +x en el volumen del host.
+ENTRYPOINT ["/bin/bash", "/opt/openss7/scripts/docker-build.sh"]

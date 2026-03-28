@@ -222,9 +222,55 @@ def cmd_test(args: argparse.Namespace) -> None:
 
 
 def cmd_extract(args: argparse.Namespace) -> None:
-    """Extrae paquetes compilados del contenedor. (Fase 3)"""
-    log_warn("Subcomando 'extract' sera implementado en Fase 3.")
-    sys.exit(0)
+    """Extrae artefactos compilados del contenedor al host en build-output/."""
+    check_docker()
+    check_docker_compose()
+    check_build_exists()
+
+    kernel_ver = get_kernel_version()
+    jobs = get_nproc()
+    log_info(f"Kernel del host: {kernel_ver}")
+    log_step("Extrayendo artefactos del build al host...")
+
+    # Crear directorio de salida en el host
+    BUILD_OUTPUT_DIR.mkdir(exist_ok=True)
+
+    env = os.environ.copy()
+    env["BUILD_JOBS"] = str(jobs)
+    env["KERNEL_VERSION"] = kernel_ver
+
+    start_time = time.time()
+    try:
+        subprocess.run(
+            ["docker", "compose", "run", "--rm", "builder", "extract"],
+            cwd=str(PROJECT_DIR),
+            env=env,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        log_error("Extraccion de artefactos fallo. Revisa los logs de arriba.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        log_warn("Extraccion cancelada por el usuario.")
+        sys.exit(130)
+
+    elapsed = time.time() - start_time
+    minutes = int(elapsed // 60)
+    seconds = int(elapsed % 60)
+
+    # Listar artefactos extraidos en el host
+    if BUILD_OUTPUT_DIR.exists():
+        ko_count = len(list((BUILD_OUTPUT_DIR / "modules").glob("*.ko"))) if (BUILD_OUTPUT_DIR / "modules").exists() else 0
+        so_count = len(list((BUILD_OUTPUT_DIR / "libs").glob("*.so*"))) if (BUILD_OUTPUT_DIR / "libs").exists() else 0
+        bin_count = len(list((BUILD_OUTPUT_DIR / "bin").iterdir())) if (BUILD_OUTPUT_DIR / "bin").exists() else 0
+        deb_count = len(list((BUILD_OUTPUT_DIR / "packages").glob("*.deb"))) if (BUILD_OUTPUT_DIR / "packages").exists() else 0
+        log_info(f"Artefactos en {BUILD_OUTPUT_DIR}:")
+        log_info(f"  Modulos .ko : {ko_count}")
+        log_info(f"  Libs .so    : {so_count}")
+        log_info(f"  Binarios    : {bin_count}")
+        log_info(f"  Paquetes DEB: {deb_count}")
+
+    log_info(f"Extraccion completada en {minutes}m {seconds}s")
 
 
 def cmd_install(args: argparse.Namespace) -> None:

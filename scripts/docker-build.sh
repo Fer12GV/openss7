@@ -270,37 +270,106 @@ do_test() {
 }
 
 do_extract() {
-    log_info "Extracting build artifacts to ${OUTPUT_DIR}..."
+    log_info "Verificando pre-condiciones del build..."
     cd "${BUILD_DIR}"
     if [ ! -f Makefile ]; then
-        log_error "No build found. Run 'build' first."
+        log_error "No se encontro build previo en ${BUILD_DIR}."
+        log_error "Ejecuta 'python deploy.py build' primero."
         exit 1
     fi
 
-    mkdir -p "${OUTPUT_DIR}"
+    # Crear estructura de directorios organizada
+    mkdir -p "${OUTPUT_DIR}/modules"
+    mkdir -p "${OUTPUT_DIR}/libs"
+    mkdir -p "${OUTPUT_DIR}/bin"
+    mkdir -p "${OUTPUT_DIR}/packages"
 
-    # Buscar modulos kernel
-    log_info "Searching for kernel modules (.ko)..."
-    find . -name "*.ko" -exec cp {} "${OUTPUT_DIR}/" \; 2>/dev/null
-    KO_COUNT=$(find "${OUTPUT_DIR}" -name "*.ko" | wc -l)
-    log_info "Found ${KO_COUNT} kernel modules"
+    # ── Modulos kernel (.ko) ──────────────────────────────────────────────
+    log_info "Extrayendo modulos kernel (.ko)..."
+    find "${BUILD_DIR}" -name "*.ko" -exec cp {} "${OUTPUT_DIR}/modules/" \;
+    KO_COUNT=$(find "${OUTPUT_DIR}/modules" -name "*.ko" | wc -l)
+    if [ "${KO_COUNT}" -gt 0 ]; then
+        log_info "EXTRACT_PASS: ${KO_COUNT} modulos .ko extraidos a ${OUTPUT_DIR}/modules/"
+    else
+        log_error "EXTRACT_FAIL: No se encontraron modulos .ko"
+    fi
 
-    # Buscar librerias compartidas
-    log_info "Searching for shared libraries (.so)..."
-    find . -name "*.so*" -exec cp {} "${OUTPUT_DIR}/" \; 2>/dev/null
-    SO_COUNT=$(find "${OUTPUT_DIR}" -name "*.so*" | wc -l)
-    log_info "Found ${SO_COUNT} shared libraries"
+    # ── Librerias compartidas (.so) ───────────────────────────────────────
+    log_info "Extrayendo librerias compartidas (.so)..."
+    find "${BUILD_DIR}" -name "*.so" -not -path "*/.libs/*" \
+        -exec cp {} "${OUTPUT_DIR}/libs/" \; 2>/dev/null
+    # Incluir versiones con symlinks (.so.X.Y.Z) desde .libs/
+    find "${BUILD_DIR}/.libs" -name "*.so*" -maxdepth 1 \
+        -exec cp -P {} "${OUTPUT_DIR}/libs/" \; 2>/dev/null || true
+    SO_COUNT=$(find "${OUTPUT_DIR}/libs" -name "*.so*" | wc -l)
+    if [ "${SO_COUNT}" -gt 0 ]; then
+        log_info "EXTRACT_PASS: ${SO_COUNT} librerias .so extraidas a ${OUTPUT_DIR}/libs/"
+    else
+        log_error "EXTRACT_FAIL: No se encontraron librerias .so"
+    fi
 
-    # Intentar generar paquetes DEB
-    log_info "Attempting to build DEB packages..."
-    make deb DESTDIR="${OUTPUT_DIR}/deb" 2>&1 || log_warn "DEB package generation failed (non-fatal)"
+    # ── Binarios ejecutables ──────────────────────────────────────────────
+    log_info "Extrayendo binarios..."
+    for bin in strinfo scls strace stracer strerr sldebug slconfig; do
+        BIN_PATH=$(find "${BUILD_DIR}" -name "${bin}" -type f -perm /111 \
+                   -not -path "*/.libs/*" | head -1)
+        if [ -n "${BIN_PATH}" ]; then
+            cp "${BIN_PATH}" "${OUTPUT_DIR}/bin/"
+            log_info "EXTRACT_PASS: binario '${bin}' extraido"
+        fi
+    done
+    BIN_COUNT=$(find "${OUTPUT_DIR}/bin" -type f -perm /111 | wc -l)
+    log_info "EXTRACT_PASS: ${BIN_COUNT} binarios extraidos a ${OUTPUT_DIR}/bin/"
 
-    DEB_COUNT=$(find "${OUTPUT_DIR}" -name "*.deb" | wc -l)
-    log_info "Extraction complete: ${KO_COUNT} .ko, ${SO_COUNT} .so, ${DEB_COUNT} .deb"
+    # ── Paquetes DEB (make deb) ───────────────────────────────────────────
+    log_info "Generando paquetes DEB (make deb)..."
+    make deb 2>&1 || log_warn "make deb fallo (no critico — los artefactos binarios ya estan extraidos)"
 
-    # Listar artefactos
-    log_info "Artifacts in ${OUTPUT_DIR}:"
-    ls -lh "${OUTPUT_DIR}/" 2>/dev/null
+    # Buscar .deb generados en el BUILD_DIR y copiar a packages/
+    find "${BUILD_DIR}" -name "*.deb" -exec cp {} "${OUTPUT_DIR}/packages/" \; 2>/dev/null || true
+    DEB_COUNT=$(find "${OUTPUT_DIR}/packages" -name "*.deb" | wc -l)
+    if [ "${DEB_COUNT}" -gt 0 ]; then
+        log_info "EXTRACT_PASS: ${DEB_COUNT} paquetes .deb copiados a ${OUTPUT_DIR}/packages/"
+    else
+        log_warn "EXTRACT_WARN: No se generaron paquetes .deb"
+    fi
+
+    # ── Manifest de artefactos ────────────────────────────────────────────
+    MANIFEST="${OUTPUT_DIR}/MANIFEST.txt"
+    {
+        echo "OpenSS7 Build Artifacts — Kernel: ${KERNEL_VERSION} — $(date -u '+%Y-%m-%d %H:%M UTC')"
+        echo "=========================================================================="
+        echo ""
+        echo "--- Kernel Modules (${KO_COUNT}) ---"
+        find "${OUTPUT_DIR}/modules" -name "*.ko" | sort | while read -r f; do
+            echo "  $(basename "${f}")  $(du -sh "${f}" | cut -f1)"
+        done
+        echo ""
+        echo "--- Shared Libraries (${SO_COUNT}) ---"
+        find "${OUTPUT_DIR}/libs" -name "*.so*" | sort | while read -r f; do
+            echo "  $(basename "${f}")  $(du -sh "${f}" | cut -f1)"
+        done
+        echo ""
+        echo "--- Binaries (${BIN_COUNT}) ---"
+        find "${OUTPUT_DIR}/bin" -type f | sort | while read -r f; do
+            echo "  $(basename "${f}")  $(du -sh "${f}" | cut -f1)"
+        done
+        echo ""
+        echo "--- DEB Packages (${DEB_COUNT}) ---"
+        find "${OUTPUT_DIR}/packages" -name "*.deb" | sort | while read -r f; do
+            echo "  $(basename "${f}")  $(du -sh "${f}" | cut -f1)"
+        done
+    } > "${MANIFEST}"
+    log_info "Manifest generado: ${MANIFEST}"
+
+    # ── Resumen ───────────────────────────────────────────────────────────
+    log_info "=== RESUMEN DE EXTRACCION ==="
+    log_info "  Modulos .ko : ${KO_COUNT}  → ${OUTPUT_DIR}/modules/"
+    log_info "  Libs   .so  : ${SO_COUNT}  → ${OUTPUT_DIR}/libs/"
+    log_info "  Binarios    : ${BIN_COUNT}  → ${OUTPUT_DIR}/bin/"
+    log_info "  Paquetes DEB: ${DEB_COUNT}  → ${OUTPUT_DIR}/packages/"
+    log_info "  Manifest    : ${MANIFEST}"
+    log_info "Extraccion completada"
 }
 
 case "${ACTION}" in
