@@ -1,0 +1,27 @@
+services:
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Fuentes OpenSS7 (read-write: autogen.sh modifica configure.ac)
+      - .:/opt/openss7
+      # Kernel: SOLO el kernel actual del host (evita OOM por escanear 70+ kernels)
+      - /lib/modules/${KERNEL_VERSION}:/lib/modules/${KERNEL_VERSION}:ro
+      - /usr/src:/usr/src:ro
+      - /boot:/boot:ro
+      # Directorio de build (persistente para cache, separado de fuentes)
+      - openss7-build:/build
+      # Directorio de salida para artefactos
+      - ./build-output:/output
+    environment:
+      - BUILD_JOBS=${BUILD_JOBS:-}
+      - KERNEL_VERSION=${KERNEL_VERSION}
+    # Limite de memoria para evitar OOM en config.status
+    mem_limit: 4g
+    # Por defecto ejecuta build
+    command: ["build"]
+
+volumes:
+  openss7-build:
+    name: openss7-build-cache

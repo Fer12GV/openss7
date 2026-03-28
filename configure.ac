@@ -76,7 +76,7 @@ AC_MSG_NOTICE([+-------------------------+])
 AC_MSG_NOTICE([| General Autoconf Checks |])
 AC_MSG_NOTICE([+-------------------------+])
 
-AM_INIT_AUTOMAKE([gnits 1.13 dist-bzip2 no-dist-gzip std-options -Wall color-tests silent-rules tar-ustar])
+AM_INIT_AUTOMAKE([1.13 dist-bzip2 no-dist-gzip std-options -Wall color-tests silent-rules tar-ustar])
 AM_MAINTAINER_MODE
 dnl
 dnl Default to --enable-silent-rules.  Let the user specify
@@ -122,7 +122,7 @@ LT_PATH_LD
 dnl LT_LANG([C++])
 dnl LT_LANG([Java])
 AC_SUBST([LIBTOOL_DEPS])
-AM_GNU_GETTEXT_VERSION([0.20])
+AM_GNU_GETTEXT_VERSION([0.21])
 AM_GNU_GETTEXT([external])
 
 m4_include([m4/swig.m4])

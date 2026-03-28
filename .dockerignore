@@ -1,0 +1,8 @@
+# No copiar artefactos de build al contexto Docker
+build-output/
+.git/
+.claude/
+CLAUDE.md
+docs/*.pdf
+*.pyc
+__pycache__/

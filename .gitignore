@@ -1566,3 +1566,78 @@ x86_64-arch-linux-gnu-config.cache
 *.xls
 xmond
 *.zip
+
+# =============================================================================
+# OpenSS7 Deploy System — Ignorados adicionales
+# =============================================================================
+
+# --- 3 Capas de memoria (solo local, no se suben a GitHub) ---
+CLAUDE.md
+docs/SCOPE.md
+docs/DEVPLAN.md
+.claude/
+
+# --- Cartas de autorizacion (documentos privados) ---
+docs/carta\ autorización\ CDM\ Equipos\ SA\ -\ 2.pdf
+docs/carta\ autorización\ CDM\ Equipos\ SA.pdf
+docs/carta\ autorización.pdf
+
+# --- Claude Code (memoria local, settings) ---
+.claude/settings.local.json
+.claude/todos.json
+.claude/.todos.bak.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg-info/
+*.egg
+dist/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+.venv/
+venv/
+ENV/
+
+# --- Environment variables ---
+.env
+.env.local
+.env.*.local
+
+# --- Build output (deploy.py extract) ---
+build-output/
+
+# --- IDE / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.cursor/
+.windsurf/
+
+# --- Linux / Ubuntu ---
+.directory
+.Trash-*
+.nfs*
+
+# --- macOS (por si acaso) ---
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Logs ---
+logs/
