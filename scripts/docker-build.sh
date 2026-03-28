@@ -147,6 +147,38 @@ do_build() {
         KERNEL_MODFLAGS="${COMPAT_KERNEL_MODFLAGS}" \
         2>&1
     log_info "Build completed successfully"
+
+    # Inyectar seccion __versions en los .ko generados.
+    # El build de OpenSS7 usa modpost.awk sin -m (modversions), lo que evita
+    # 2439 errores de build pero genera .ko sin __versions. Kernels con
+    # CONFIG_MODVERSIONS=y (ej. Ubuntu) necesitan esta seccion para cargar el modulo.
+    do_inject_modversions
+}
+
+do_inject_modversions() {
+    log_info "Inyectando seccion __versions en modulos .ko (CONFIG_MODVERSIONS=y)..."
+
+    # Verificar dependencias
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_warn "python3 no disponible — saltando inyeccion de modversions"
+        return 0
+    fi
+    if ! command -v objcopy >/dev/null 2>&1; then
+        log_warn "objcopy no disponible — saltando inyeccion de modversions"
+        return 0
+    fi
+
+    local KERNEL_SYMVERS="/lib/modules/${KERNEL_VERSION}/build/Module.symvers"
+    if [ ! -f "${KERNEL_SYMVERS}" ]; then
+        log_warn "Module.symvers del kernel no encontrado en ${KERNEL_SYMVERS} — saltando"
+        return 0
+    fi
+
+    if python3 /opt/openss7/scripts/inject_modversions.py "${BUILD_DIR}" "${KERNEL_VERSION}"; then
+        log_info "Seccion __versions inyectada correctamente en los modulos .ko"
+    else
+        log_warn "Inyeccion de __versions fallo en algunos modulos (ver errores arriba)"
+    fi
 }
 
 do_test() {

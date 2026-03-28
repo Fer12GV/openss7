@@ -65,6 +65,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     debhelper \
     fakeroot \
     dh-make \
+    # Python3 para inject_modversions.py (post-build step)
+    python3 \
+    # binutils para objcopy y readelf (inject_modversions.py)
+    binutils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/openss7
