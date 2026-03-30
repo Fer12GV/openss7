@@ -1,100 +1,53 @@
 ---
-description: Reanudar el desarrollo de OpenSS7 Deploy System desde donde quedó la última sesión
+description: Reanuda el trabajo del proyecto OpenSS7 Deploy System desde donde quedo la ultima sesion
 ---
 
 # Workflow: Continuar Desarrollo
 
-Este workflow permite a cualquier modelo en WindSurf retomar el trabajo del proyecto OpenSS7 desde donde quedó la última sesión, con contexto completo.
+Este workflow permite retomar el trabajo del proyecto OpenSS7 desde donde quedó la última sesión, con contexto completo de las **3 capas de memoria**.
 
-## Pasos a seguir
+## Instrucciones
 
-### 1. Leer contexto persistente principal
-- Leer `CLAUDE.md` en la raíz del proyecto para obtener:
-  - Stack tecnológico
-  - Comandos esenciales
-  - Reglas SIEMPRE activas
-  - Estado actual del proyecto
-  - VPS de producción
+Cuando el usuario ejecute `/continuar`, sigue estos pasos EN ORDEN:
 
-### 2. Revisar plan de desarrollo activo
-- Leer `docs/DEVPLAN.md` para identificar:
-  - Tabla de estado de fases (buscar la primera fase NO marcada como COMPLETADA)
-  - Tareas pendientes en la fase actual (marcadas con `- [ ]`)
-  - Último bloque de tareas en progreso
-  - Criterios de aceptación de la fase
+### Paso 1 — Leer contexto persistente
+Lee `CLAUDE.md` en la raiz del proyecto. Ahi esta el stack, reglas y estado actual.
 
-### 3. Revisar alcance y decisiones arquitectónicas
-- Leer `docs/SCOPE.md` para refrescar:
-  - Alcance del proyecto (solo deploy, NO protocolos)
-  - Arquitectura del sistema
-  - Decisiones arquitectónicas clave
-  - Lo que entregamos vs lo que NO incluimos
+### Paso 2 — Revisar plan de desarrollo
+Lee `docs/DEVPLAN.md`. Busca la fase actual (la primera que NO este marcada como COMPLETADA en la tabla de estado).
+Identifica las tareas pendientes (marcadas con `- [ ]`).
 
-### 4. Recuperar memorias persistentes de WindSurf
-Las memorias persistentes ya están cargadas automáticamente en el contexto de WindSurf. Verificar que incluyen:
-- Reglas de deploy, docker, kernel, python, testing
-- Feedbacks de issues resueltos (compat header, modversions, etc.)
-- Estado del proyecto y VPS
-- Perfil del usuario Fernando
+### Paso 3 — Revisar alcance
+Lee `docs/SCOPE.md` para refrescar el alcance y decisiones arquitectonicas.
 
-### 5. Verificar archivos relevantes para la fase actual
-Según la fase identificada en DEVPLAN.md, localizar los archivos clave:
+### Paso 4 — Verificar archivos relevantes
+Usa Glob para localizar los archivos de la fase actual:
+- Fase 1: Dockerfile, docker-compose.yml, deploy.py
+- Fase 2-3: deploy.py (subcomandos test/extract)
+- Fase 4: deploy.py (subcomandos install/verify/uninstall)
+- Fase 5: README.deploy.md, deploy.py (flags UX)
+- Fase 6-7: VPS deployment y Portainer
 
-**Fase 1-3 (Build/Test/Extract):**
-- `Dockerfile`
-- `docker-compose.yml`
-- `deploy.py` (subcomandos build, test, extract)
-- `scripts/docker-build.sh`
-- `scripts/compat-kernel.h`
+Si los archivos existen, leelos para entender el estado actual del codigo.
 
-**Fase 4 (Install/Verify/Uninstall):**
-- `deploy.py` (subcomandos install, verify, uninstall)
-- `scripts/inject_modversions.py`
+### Paso 5 — Identificar PRIMERA tarea pendiente
+Busca en DEVPLAN.md la PRIMERA tarea marcada con `- [ ]` en la fase actual.
+IMPORTANTE: Una tarea solo esta completada si tiene `- [x]` en DEVPLAN.md.
+NO importa si el codigo ya existe — sigue el DEVPLAN.md como fuente de verdad.
 
-**Fase 5 (Pulido):**
-- `README.deploy.md`
-- `deploy.py` (flags --help, manejo de errores)
+### Paso 6 — Resumir y confirmar
+Presenta al usuario:
+1. **Fase actual** y progreso (de la tabla en DEVPLAN.md)
+2. **Ultima tarea completada** (ultima `- [x]` antes de la primera `- [ ]`)
+3. **Proxima tarea** a ejecutar (primera `- [ ]` encontrada)
+4. **Contexto tecnico** relevante (VPS, archivos, comandos)
 
-**Fase 6 (VPS):**
-- Acceso SSH a VPS (credenciales en `.env`)
-- Repo en `/root/openss7` en la VPS
+Pregunta: "Continuo ejecutando: [proxima tarea]?"
 
-**Fase 7 (Portainer):**
-- `docker-compose.yml` (servicio portainer)
-- Configuración de Portainer en VPS
-
-### 6. Resumir y confirmar con el usuario
-Presentar al usuario:
-1. **Fase actual** y su progreso (ej: "Fase 7 — Portainer, 0%")
-2. **Última tarea completada** (desde CLAUDE.md)
-3. **Próxima tarea** a ejecutar (primera `- [ ]` en DEVPLAN.md de la fase actual)
-4. **Archivos** que se van a crear/modificar
-5. **Contexto técnico** relevante (ej: errores resueltos previamente)
-
-Preguntar: "¿Continúo con [próxima tarea]? ¿O prefieres ajustar el plan?"
-
-### 7. Ejecutar la próxima tarea
-Una vez confirmado por el usuario:
-- Ejecutar la tarea siguiendo las reglas del proyecto
-- Al completarla, marcar como completada en DEVPLAN.md: `- [ ]` → `- [x]`
-- Si hay pruebas de fase pendientes, ejecutarlas antes de avanzar
-- Si toda la fase está completa, actualizar:
-  - Tabla de estado en DEVPLAN.md
-  - Sección "Estado Actual" en CLAUDE.md
-  - Crear memoria persistente si hay aprendizajes nuevos
-
-## Reglas importantes al continuar
-
-1. **NO avanzar de fase si hay errores** — fixear primero
-2. **Actualizar las 3 capas de memoria** al completar cada fase
-3. **NO modificar src/, tests/, configure.ac** — solo infraestructura de deploy
-4. **Verificar precondiciones** antes de cada comando (Docker instalado, permisos root si aplica)
-5. **Seguir convención tmux en VPS** si trabajas en producción
-
-## Notas técnicas clave
-
-- OpenSS7 se compila SOLO en Docker, nunca directamente en el host
-- Los módulos .ko deben compilarse contra el kernel que los ejecutará
-- `scripts/compat-kernel.h` contiene 14 fixes de compatibilidad para kernel 5.x+
-- `scripts/inject_modversions.py` inyecta sección `__versions` post-build (CONFIG_MODVERSIONS=y)
-- VPS: Ubuntu 22.04.5 LTS, kernel 5.15.0-173-generic, IP 129.121.60.55:22022
+### Paso 7 — Ejecutar la tarea
+Una vez confirmado:
+1. Ejecuta la tarea EXACTAMENTE como esta descrita en DEVPLAN.md
+2. Al completarla exitosamente, marca como `- [x]` en DEVPLAN.md
+3. Si hay pruebas de fase pendientes, ejecutalas
+4. Si toda la fase esta completa, actualiza estado en DEVPLAN.md y CLAUDE.md
+5. Recomienda ejecutar `/cierre` si se completo una fase o bloque importante
