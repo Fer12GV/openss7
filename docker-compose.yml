@@ -22,6 +22,24 @@ services:
     # Por defecto ejecuta build
     command: ["build"]
 
+  # Entorno de runtime persistente — muestra el stack desplegado
+  runtime:
+    image: openss7-builder:latest
+    container_name: openss7-runtime
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["echo 'OpenSS7 runtime ready' && sleep infinity"]
+    volumes:
+      - .:/opt/openss7:ro
+      - /lib/modules/${KERNEL_VERSION}:/lib/modules/${KERNEL_VERSION}:ro
+      - ./build-output:/output:ro
+    environment:
+      - KERNEL_VERSION=${KERNEL_VERSION}
+    labels:
+      - "project=openss7"
+      - "role=runtime"
+      - "version=1.1.1"
+
 volumes:
   openss7-build:
     name: openss7-build-cache
