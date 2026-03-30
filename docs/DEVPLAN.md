@@ -9,10 +9,10 @@
 | 4 | Install + Verify + Uninstall en Host | COMPLETADA | 100% |
 | 5 | Pulido Final + Documentacion | COMPLETADA | 100% |
 | 6 | Deploy en VPS HostGator | COMPLETADA | 100% |
-| 7 | Panel Web Portainer (Monitoring) | EN CURSO | 0% |
+| 7 | Panel Web Portainer (Monitoring) | EN CURSO | 90% |
 
 **Fase actual**: FASE 7 — Portainer como interfaz grafica de monitoring para el cliente
-**Ultima actualizacion**: 2026-03-30 (sesion 8)
+**Ultima actualizacion**: 2026-03-30 (sesion 9)
 
 ---
 
@@ -249,29 +249,29 @@ Password: ver .env → VPS_PASSWORD (completar antes de esta fase)
 **Precondicion**: Fase 6 completada — OpenSS7 instalado y contenedor runtime corriendo en la VPS.
 
 ### Bloque 7.1 — Desplegar Portainer en la VPS
-- [ ] Crear volumen Docker para datos de Portainer: `docker volume create portainer_data`
-- [ ] Levantar Portainer CE con docker compose (agregar servicio al compose del proyecto)
-- [ ] Verificar que Portainer responde en puerto 9000
-- [ ] Configurar usuario admin inicial de Portainer
+- [x] Crear volumen Docker para datos de Portainer: `docker volume create portainer_data` — openss7-portainer-data creado
+- [x] Levantar Portainer CE con docker compose (agregar servicio al compose del proyecto) — Up en VPS
+- [x] Verificar que Portainer responde en puerto 9000 — HTTP 200 desde exterior
+- [x] Configurar usuario admin inicial de Portainer — admin/OpenSS7admin2026!
 
 ### Bloque 7.2 — Configurar vista para el cliente
-- [ ] Login en Portainer y verificar que muestra el entorno local (local Docker)
-- [ ] Confirmar que `openss7-runtime` aparece como contenedor activo en Portainer
-- [ ] Confirmar que imagen `openss7-builder:latest` aparece en Portainer
-- [ ] Documentar URL y credenciales de acceso para el cliente
+- [x] Login en Portainer y verificar que muestra el entorno local (local Docker) — endpoint 'local' agregado via API
+- [x] Confirmar que `openss7-runtime` aparece como contenedor activo en Portainer — running
+- [x] Confirmar que imagen `openss7-builder:latest` aparece en Portainer — 992 MB visible
+- [x] Documentar URL y credenciales de acceso para el cliente — docs/07-portainer-acceso.md
 
 ### Bloque 7.3 — Integracion con docker-compose.yml
-- [ ] Agregar servicio `portainer` al docker-compose.yml del proyecto
-- [ ] Asegurar que `docker compose up -d` levanta tanto runtime como portainer
-- [ ] Verificar `docker compose ps` muestra ambos servicios activos
-- [ ] Hacer commit y push a GitHub
+- [x] Agregar servicio `portainer` al docker-compose.yml del proyecto — commit 23abc1d6e
+- [x] Asegurar que `docker compose up -d` levanta tanto runtime como portainer — ambos Up
+- [x] Verificar `docker compose ps` muestra ambos servicios activos — openss7-portainer + openss7-runtime Up
+- [ ] Hacer commit y push a GitHub (pendiente: commit final con DEVPLAN actualizado)
 
 ### Pruebas de Fase 7
-- [ ] Abrir `http://129.121.60.55:9000` en navegador — debe cargar Portainer
-- [ ] Login con credenciales admin funciona
-- [ ] Panel muestra contenedor `openss7-runtime` en estado Running
-- [ ] Panel muestra imagen `openss7-builder:latest`
-- [ ] `docker compose ps` muestra portainer y runtime Up
+- [x] Abrir `http://129.121.60.55:9000` en navegador — HTTP 200, Portainer carga
+- [x] Login con credenciales admin funciona — admin/OpenSS7admin2026! via API
+- [x] Panel muestra contenedor `openss7-runtime` en estado Running — PASS
+- [x] Panel muestra imagen `openss7-builder:latest` — PASS (992 MB)
+- [x] `docker compose ps` muestra portainer y runtime Up — PASS
 
 **Criterio de aceptacion**: El cliente puede abrir un navegador, entrar a la IP:9000 y ver visualmente que OpenSS7 esta desplegado y corriendo.
 
