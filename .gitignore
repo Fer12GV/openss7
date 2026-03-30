@@ -1572,10 +1572,10 @@ xmond
 # =============================================================================
 
 # --- 3 Capas de memoria (solo local, no se suben a GitHub) ---
-CLAUDE.md
-docs/SCOPE.md
-docs/DEVPLAN.md
-.claude/
+# CLAUDE.md
+# docs/SCOPE.md
+# docs/DEVPLAN.md
+#.claude/
 
 # --- Cartas de autorizacion (documentos privados) ---
 docs/carta\ autorización\ CDM\ Equipos\ SA\ -\ 2.pdf
@@ -1583,9 +1583,9 @@ docs/carta\ autorización\ CDM\ Equipos\ SA.pdf
 docs/carta\ autorización.pdf
 
 # --- Claude Code (memoria local, settings) ---
-.claude/settings.local.json
-.claude/todos.json
-.claude/.todos.bak.json
+# .claude/settings.local.json
+# .claude/todos.json
+# .claude/.todos.bak.json
 
 # --- Python ---
 __pycache__/
@@ -1623,7 +1623,7 @@ build-output/
 *.sublime-project
 *.sublime-workspace
 .cursor/
-.windsurf/
+# .windsurf/
 
 # --- Linux / Ubuntu ---
 .directory
