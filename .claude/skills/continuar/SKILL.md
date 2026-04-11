@@ -22,8 +22,18 @@ Usa Glob para localizar los archivos de la fase actual:
 - Fase 2-3: deploy.py (subcomandos test/extract)
 - Fase 4: deploy.py (subcomandos install/verify/uninstall)
 - Fase 5: README.deploy.md, deploy.py (flags UX)
+- Fase 6: scripts/deploy-vps.sh, deploy.py (VPS remote)
+- Fase 7: docker-compose.yml (servicio portainer), docs/07-portainer-acceso.md
+- Fase 8: backend/, simulator/, frontend/, docs/09-requerimiento-tecnico-sms-ss7.md, docs/10-fase8-simulador.md
 
 Si los archivos existen, leelos para entender el estado actual del codigo.
+
+**IMPORTANTE para Fase 8**: Antes de tocar nada, leer TODAS estas memorias (contienen el contexto critico para continuar sin ambiguedad):
+- memory/project_estado.md (estado sesion 10)
+- memory/project_fase8_simulador.md (arquitectura simulador + decoder + UI)
+- memory/project_vps_state.md (estado real VPS, Asterisk instalado, strinfo/scls rotos)
+- memory/reference_ss7_parametros.md (parametros pendientes de Telefonica)
+- memory/feedback_decoder_pycrate.md (decoder real con pycrate, nunca mocks)
 
 ### Paso 5 — Resumir y confirmar
 Presenta al usuario:

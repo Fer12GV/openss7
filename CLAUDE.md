@@ -114,8 +114,18 @@ VPS_PASSWORD=                  # Completar en .env antes de Fase 6
 
 ## Estado Actual del Proyecto
 <!-- Actualiza esto al final de cada sesion con /cierre -->
-Ultima sesion: 2026-03-30 (sesion 9)
-Ultima tarea completada: FASE 7 COMPLETADA — Portainer desplegado en VPS (http://129.121.60.55:9000), admin configurado, openss7-runtime visible, docs/07-portainer-acceso.md creado.
-Proxima tarea: TODAS LAS FASES COMPLETADAS (1-7). Proyecto entregable. Evaluar si se necesitan fases adicionales.
+Ultima sesion: 2026-04-11 (sesion 10)
+Ultima tarea completada: Diagnostico completo VPS + documento tecnico entregable para Telefonica (docs/09-requerimiento-tecnico-sms-ss7.md, commit fe31c725f) + 3 capas de memoria actualizadas para Fase 8.
+Proxima tarea: Fase 8 Bloque 8.1 — Diagnostico adicional VPS (apt history para Asterisk, modinfo SIGTRAN, chan_ss7). Luego 8.2 (reparar strinfo/scls, cargar modulos SIGTRAN). Luego 8.3-8.7 (backend+simulator+UI).
 Rama activa: master
-Fase actual: Todas las fases completadas (1-7)
+Fase actual: Fase 8 EN CURSO (5%)
+
+**Contexto Fase 8 — Simulador SS7 + Frontend SMS tipo WhatsApp Web**:
+- Disparador: carta autorizacion Telefonica Colombia (docs/Carta Movistar 1.pdf), firmada 30-marzo-2026
+- Estrategia: simulador primero, transicion a datos reales despues cambiando 5 parametros de config
+- Decoder real con libreria pycrate (NUNCA mocks ni placeholders — ver memoria feedback_decoder_pycrate.md)
+- Arquitectura: 3 contenedores nuevos (openss7-backend FastAPI+pycrate, openss7-simulator pycrate encoder, openss7-ui nginx WhatsApp-like) + los existentes (runtime, portainer)
+- Autorizaciones del usuario: Fase A (diagnostico adicional), Fase B (reparar strinfo/scls + cargar modulos SIGTRAN M3UA/SCTP), Fase C (construir simulador+backend+UI) — TODAS AUTORIZADAS
+- Hallazgos VPS (2026-04-11): Asterisk 18.10.0 instalado por otro ingeniero del equipo (OK, no cuestionar), strinfo/scls ROTOS (wrappers libtool buscan .libs/ inexistente), modulos SIGTRAN disponibles sin cargar, puerto SCTP 2905 NO escuchando
+- Red corporativa usuario: Cliente (VLAN 10.57.20.0/24) -> Switch (10.57.1.2/24) -> Fortinet -> Internet -> VPS (129.121.60.55:22022). IP publica al salir: 190.254.131.168
+- NO construir interceptor de terceros. Prueba con movil propio consentido del equipo.

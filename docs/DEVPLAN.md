@@ -10,9 +10,10 @@
 | 5 | Pulido Final + Documentacion | COMPLETADA | 100% |
 | 6 | Deploy en VPS HostGator | COMPLETADA | 100% |
 | 7 | Panel Web Portainer (Monitoring) | COMPLETADA | 100% |
+| 8 | Simulador SS7 + Frontend SMS (WhatsApp Web) | EN CURSO | 5% |
 
-**Fase actual**: TODAS LAS FASES COMPLETADAS (1-7) — Proyecto entregable
-**Ultima actualizacion**: 2026-03-30 (sesion 9)
+**Fase actual**: Fase 8 — Simulador SS7/SIGTRAN + Backend decoder + Frontend tipo WhatsApp Web
+**Ultima actualizacion**: 2026-04-11 (sesion 10)
 
 ---
 
@@ -274,6 +275,105 @@ Password: ver .env → VPS_PASSWORD (completar antes de esta fase)
 - [x] `docker compose ps` muestra portainer y runtime Up — PASS
 
 **Criterio de aceptacion**: El cliente puede abrir un navegador, entrar a la IP:9000 y ver visualmente que OpenSS7 esta desplegado y corriendo.
+
+---
+
+## FASE 8 — Simulador SS7 + Frontend SMS (tipo WhatsApp Web)
+**Objetivo**: Construir pipeline end-to-end que demuestre el funcionamiento del stack SS7 generando mensajes MAP mt-forwardSM reales (ASN.1 BER), decodificandolos en tiempo real y mostrandolos en una UI web estilo WhatsApp Web. Modo simulador primero, transicion a datos reales de Telefonica Colombia despues mediante cambio de configuracion (cero refactor).
+
+**Disparador**: Carta de autorizacion de Colombia Telecomunicaciones S.A. E.S.P (Telefonica Colombia), firmada por Alfonso Enriquez Huidobro, Director Global IT Procurement, fecha 30-marzo-2026 (`docs/Carta Movistar 1.pdf`).
+
+**Precondicion**: Fase 7 completada. VPS con OpenSS7 y Portainer activos.
+
+**Restricciones clave**:
+- NO construir interceptor de SMS de terceros
+- Prueba inicial con movil propio del equipo (consentido)
+- Decoder real con libreria `pycrate`, nunca mocks ni placeholders
+- Simulador genera bytes SS7 reales (mismos que Telefonica enviaria)
+- Transicion simulador -> produccion = editar 5 parametros en un archivo de configuracion
+
+### Bloque 8.1 — Diagnostico adicional VPS (Fase A autorizada)
+- [ ] Revisar `/var/log/apt/history.log` para identificar quien/cuando instalo Asterisk
+- [ ] Ejecutar `modinfo` sobre cada .ko SIGTRAN en /lib/modules/.../extra/openss7/ y validar vermagic
+- [ ] Verificar si hay `chan_ss7` o modulos SS7 disponibles para Asterisk (`apt list --installed | grep ss7`)
+- [ ] Confirmar que /root/openss7/build-output sigue integro
+- [ ] Documentar estado actual en sesion tmux `deploy`
+
+### Bloque 8.2 — Reparacion strinfo/scls + Carga modulos SIGTRAN (Fase B autorizada)
+- [ ] Reinstalar binarios OpenSS7 para arreglar strinfo/scls (wrappers libtool rotos)
+- [ ] `modprobe streams_sctp` — cargar driver SCTP de OpenSS7
+- [ ] `modprobe streams_m3ua_as` — cargar M3UA Application Server
+- [ ] `modprobe streams_sccp` — cargar SCCP
+- [ ] Verificar con `lsmod | grep streams` que todos aparecen
+- [ ] Abrir puerto SCTP 2905 en iptables/UFW si es necesario
+- [ ] Verificar que strinfo responde correctamente
+
+### Bloque 8.3 — Contenedor openss7-backend (Python FastAPI + pycrate)
+- [ ] Crear `backend/Dockerfile` con Python 3.11 + pycrate + FastAPI + uvicorn
+- [ ] Crear `backend/app/main.py` con endpoints: GET /health, WS /ws/messages
+- [ ] Crear `backend/app/decoder/sctp_listener.py` — escucha SCTP 2905, recibe bytes
+- [ ] Crear `backend/app/decoder/m3ua.py` — parser M3UA Data Message
+- [ ] Crear `backend/app/decoder/sccp.py` — decoder SCCP Unitdata
+- [ ] Crear `backend/app/decoder/tcap.py` — decoder TCAP Begin/Continue/End
+- [ ] Crear `backend/app/decoder/map_sms.py` — decoder MAP mt-forwardSM / mo-forwardSM via pycrate
+- [ ] Crear `backend/app/decoder/tpdu.py` — decoder TPDU 3GPP TS 23.040 (GSM-7, UCS-2, 8-bit)
+- [ ] Crear `backend/app/storage/sqlite.py` — almacenar historial de mensajes
+- [ ] Crear `backend/app/config.yaml` con parametros simulador (local_pc, remote_pc, remote_ip, puerto)
+
+### Bloque 8.4 — Contenedor openss7-simulator (Seagull o pycrate encoder)
+- [ ] Crear `simulator/Dockerfile` con Python 3.11 + pycrate
+- [ ] Crear `simulator/generate_sms.py` — genera MAP mt-forwardSM con pycrate
+  - Campos configurables: origen, destino, texto, timestamp
+  - Soporte GSM-7, UCS-2 (emojis) y concatenados
+- [ ] Crear `simulator/send_sctp.py` — abre asociacion SCTP hacia openss7-backend
+- [ ] Crear `simulator/scenarios/` con casos de prueba (sms corto, largo, unicode, numero internacional)
+- [ ] Crear `simulator/cli.py` — CLI para disparar scenarios manualmente
+
+### Bloque 8.5 — Contenedor openss7-ui (Frontend tipo WhatsApp Web)
+- [ ] Crear `frontend/Dockerfile` con nginx alpine
+- [ ] Crear `frontend/index.html` — layout tipo WhatsApp Web (sidebar conversaciones + panel mensajes)
+- [ ] Crear `frontend/css/style.css` — estilo WhatsApp Web (colores verde/gris, burbujas)
+- [ ] Crear `frontend/js/app.js` — conecta WebSocket /ws/messages al backend, renderiza mensajes en tiempo real
+- [ ] Crear `frontend/nginx.conf` — servir estaticos en puerto 80, proxy /ws/ al backend
+- [ ] UI muestra: lista de numeros origen (conversaciones), panel con mensajes decodificados, timestamps, indicador de estado
+
+### Bloque 8.6 — Integracion docker-compose.yml
+- [ ] Agregar servicio `openss7-backend` al docker-compose.yml (puerto 8081 WS)
+- [ ] Agregar servicio `openss7-simulator` al docker-compose.yml (comunica con backend via red interna)
+- [ ] Agregar servicio `openss7-ui` al docker-compose.yml (puerto 8080 publico)
+- [ ] Configurar red interna `openss7_ss7net` para trafico SS7 simulado
+- [ ] Configurar dependencias entre servicios (depends_on)
+- [ ] Verificar que `docker compose up -d` levanta todo el stack
+
+### Bloque 8.7 — Prueba end-to-end con simulador
+- [ ] Levantar stack completo en local
+- [ ] Ejecutar scenario "sms corto GSM-7" desde openss7-simulator
+- [ ] Verificar en backend logs que llegan bytes SCTP
+- [ ] Verificar decodificacion: M3UA -> SCCP -> TCAP -> MAP -> TPDU -> texto
+- [ ] Verificar que WebSocket envia JSON al frontend
+- [ ] Verificar que el frontend muestra el mensaje en la UI tipo WhatsApp
+- [ ] Probar scenarios: sms largo (concatenado), unicode (emoji), numero internacional
+- [ ] Desplegar stack en VPS 129.121.60.55
+- [ ] Acceder a `http://129.121.60.55:8080` desde navegador externo
+
+### Bloque 8.8 — Documentacion de transicion a datos reales
+- [ ] Crear `docs/10-fase8-simulador.md` con arquitectura del simulador
+- [ ] Crear `docs/11-transicion-datos-reales.md` con checklist para Telefonica
+- [ ] Documentar los 5 parametros que cambian (local PC, remote PC, remote IP, puerto, NI)
+- [ ] Incluir diagrama antes/despues
+- [ ] Actualizar README.md con la nueva funcionalidad
+
+### Pruebas de Fase 8
+- [ ] Simulador genera bytes ASN.1 BER validos (inspeccion con Wireshark)
+- [ ] Decoder procesa bytes y extrae: origen, destino, texto, DCS, timestamp
+- [ ] UI muestra mensajes en tiempo real (latencia < 1s)
+- [ ] Scenarios: corto, largo, unicode, internacional — todos PASS
+- [ ] Stack completo accesible en VPS
+- [ ] Portainer muestra los 4 contenedores (runtime, portainer, backend, simulator, ui)
+
+**Criterio de aceptacion**: Generar un SMS desde el simulador y verlo aparecer en la UI tipo WhatsApp Web en menos de 1 segundo, con origen, destino y texto correctamente decodificados.
+
+**Criterio extra**: Demostrar que cambiando los parametros de configuracion (sin tocar codigo), el backend puede conectar con un Signaling Gateway real cuando Telefonica lo provea.
 
 ---
 
